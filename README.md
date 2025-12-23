@@ -1,7 +1,7 @@
 # RAG
 this is a minimal implementation of the RAG  for qustion answering
 
-## requirements
+## Requirements
 - python 3.8
 #### install python using mini conda 
 1) download miniconda 
@@ -10,6 +10,17 @@ this is a minimal implementation of the RAG  for qustion answering
 $ conda create -n mini_rag python=3.8
 ```
 3) active the environment using the following command :
-``` bash
+```bash
 $ conda activite mini_rag
 ```
+## Installiation
+
+### install required packages
+```bash
+$ pip install -r requirements.txt
+```
+### setup the environment variables
+```bash
+$ cp .env.example .env
+```
+set your environment variables in the .env file like 'OPENAI_API_KEY' value
