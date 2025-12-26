@@ -27,7 +27,7 @@ async def upload_data(project_id: str,file:UploadFile,app_settings:Settings = De
     
     project_controller = ProjectController()
     project_dir_path = project_controller.get_project_path(project_id=project_id)
-    file_path = data_controller.generate_file_name(project_id=project_id,orgin_file_name=file.filename)
+    file_path,file_id = data_controller.generate_file_name(project_id=project_id,orgin_file_name=file.filename)
     try:
         async with aiofiles.open(file_path,"wb") as f:
             while chunk := await file.read(app_settings.FILE_CHUNK_SIZE):
@@ -39,4 +39,6 @@ async def upload_data(project_id: str,file:UploadFile,app_settings:Settings = De
             status_code=status.HTTP_400_BAD_REQUEST,
             content={
                 "signal":ResponseSignal.FILE_SIZE_EXCEEDED.value})
-    return JSONResponse(content={"signal":str(ResponseSignal.FILE_UPLOAD_SUCCESS)})
+    return JSONResponse(content={
+                        "signal":ResponseSignal.FILE_UPLOAD_SUCCESS.value,
+                        "file_id":file_id})
