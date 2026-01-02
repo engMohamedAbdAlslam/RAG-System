@@ -27,6 +27,7 @@ class ProcessController(BaseController):
         if file_extension == ProcessEnum.PDF.value:
             return PyMuPDFLoader(file_path)
         return None
+    
     def get_file_content(self, file_id: str):
         loader = self.get_file_loader(file_id=file_id)
 
@@ -34,7 +35,6 @@ class ProcessController(BaseController):
             raise ValueError(f"Unsupported file type or loader not found for: {file_id}")
 
         return loader.load()
-
     
     def process_file_content(self,file_content:list,file_id:str,chunk_size:int =100,overlap_size:int=20):
         text_spliter = RecursiveCharacterTextSplitter(chunk_size=chunk_size,chunk_overlap= overlap_size,length_function = len)

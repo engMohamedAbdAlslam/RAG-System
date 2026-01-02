@@ -30,3 +30,7 @@ set your environment variables in the .env file like 'OPENAI_API_KEY' value
 ```bash
 $ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
+## to auto complete press `ctrl`+`shift`+`p` then Enter
+```bach
+$ Remote-WSL: Reopen Folder in WSL
+```
