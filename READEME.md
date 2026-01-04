@@ -34,3 +34,11 @@ $ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```bach
 $ Remote-WSL: Reopen Folder in WSL
 ```
+
+## Run Docker compose serevecies
+
+```bash
+$ cd docker
+$ cp .env.example .env
+```
+- update `env` with your credentials
