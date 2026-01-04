@@ -15,8 +15,8 @@ class ProjectModel(BaseDataModel):
 
 
     async def init_collection(self):
-        all_collictions =await self.db_client.list_colliction_names()
-        if DataBaseEnum.COLLECTION_PROJECT_NAME.value not in all_collictions:
+        all_collections =await self.db_client.list_collection_names()
+        if DataBaseEnum.COLLECTION_PROJECT_NAME.value not in all_collections:
             self.collection=self.db_client[DataBaseEnum.COLLECTION_PROJECT_NAME.value]
             indexes = Project.get_indexes()
             for index in indexes:
