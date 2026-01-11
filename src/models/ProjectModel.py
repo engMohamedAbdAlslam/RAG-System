@@ -5,7 +5,7 @@ from .enums.DataBaseEnum import DataBaseEnum
 class ProjectModel(BaseDataModel):
     def __init__(self, db_client:object):
         super().__init__(db_client=db_client)
-        self.collection = self.db_client[DataBaseEnum.COLLECTION_PROJECT_NAME.value]
+        self.collection = self.db_client[DataBaseEnum.COLLECTION_PROJECT_NAME.value] # type: ignore
     @classmethod
     async def create_instance(cls,db_client:object):
         instance = cls(db_client)
@@ -15,9 +15,9 @@ class ProjectModel(BaseDataModel):
 
 
     async def init_collection(self):
-        all_collections =await self.db_client.list_collection_names()
+        all_collections =await self.db_client.list_collection_names() # type: ignore
         if DataBaseEnum.COLLECTION_PROJECT_NAME.value not in all_collections:
-            self.collection=self.db_client[DataBaseEnum.COLLECTION_PROJECT_NAME.value]
+            self.collection=self.db_client[DataBaseEnum.COLLECTION_PROJECT_NAME.value] # type: ignore
             indexes = Project.get_indexes()
             for index in indexes:
                 await self.collection.create_index(
@@ -36,7 +36,7 @@ class ProjectModel(BaseDataModel):
         record = await self.collection.find_one({"project_id":project_id})
         if record is None:
             ## creat new project
-            project = Project(project_id=project_id)
+            project = Project(project_id=project_id) # type: ignore
             project = await self.creat_project(project=project)
             return project
         

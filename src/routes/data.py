@@ -37,14 +37,14 @@ async def upload_data(request:Request,project_id: str,file:UploadFile,app_settin
     
     project_controller = ProjectController()
     project_dir_path = project_controller.get_project_path(project_id=project_id)
-    file_path,file_id = data_controller.generate_file_name(project_id=project_id,orgin_file_name=file.filename)
+    file_path,file_id = data_controller.generate_file_name(project_id=project_id,orgin_file_name=file.filename) # type: ignore
     try:
         async with aiofiles.open(file_path,"wb") as f:
             while chunk := await file.read(app_settings.FILE_CHUNK_SIZE):
                 await f.write(chunk)
     except Exception as e:
         logger.error(f"error while uploading file: {e} ")
-        logging
+        logging # type: ignore
 
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -58,7 +58,7 @@ async def upload_data(request:Request,project_id: str,file:UploadFile,app_settin
         asset_size = os.path.getsize(file_path),
         asset_project_id = project.id
  
-    )
+    ) # type: ignore
     asset_recored = await asset_model.create_asset(asset=asset_resource)
 
     return JSONResponse(content={
@@ -89,7 +89,7 @@ async def process_end_point(request:Request,project_id : str, process_request : 
     project_file_ids = {}
     
     if process_request.file_id:
-        asset_record =await asset_model.get_asset_record(asset_project_id=project.id,asset_name=process_request.file_id)
+        asset_record =await asset_model.get_asset_record(asset_project_id=project.id,asset_name=process_request.file_id) # type: ignore
 
         if asset_record is None:
             return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,
@@ -103,7 +103,7 @@ async def process_end_point(request:Request,project_id : str, process_request : 
 
  
         project_files = await asset_model.get_all_project_assets(
-            asset_project_id=project.id,asset_type=AssetEnum.FILE.value)
+            asset_project_id=project.id,asset_type=AssetEnum.FILE.value) # type: ignore
 
         project_file_ids={
             record.id:record.asset_name
@@ -111,14 +111,14 @@ async def process_end_point(request:Request,project_id : str, process_request : 
         }
 
         if len(project_file_ids)==0:
-            return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST.value,content={
+            return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,content={
                 "signal":ResponseSignal.NO_FILE_ERROES.value
             })
     process_controller = ProcessController(project_id=project_id)
 
     if do_reset == 1:
         _ = await chunk_model.delet_chunks_by_project_id(
-        project_id=project.id
+        project_id=project.id # type: ignore
         )
     no_recored =0
     no_files = 0
@@ -127,7 +127,7 @@ async def process_end_point(request:Request,project_id : str, process_request : 
         if file_content is None:
             logger.error(f"error while processing {file_id}")
             continue
-        file_chunks = process_controller.process_file_content(chunk_size=chunck_size,file_content=file_content,file_id=file_id,overlap_size=overlap_size)
+        file_chunks = process_controller.process_file_content(chunk_size=chunck_size,file_content=file_content,file_id=file_id,overlap_size=overlap_size) # type: ignore
 
         if file_chunks is None or len(file_chunks)==0:
             return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,content={
@@ -141,7 +141,7 @@ async def process_end_point(request:Request,project_id : str, process_request : 
                 chunk_order=i+1,
                 chunk_project_id=ObjectId(project.id),
                 chunk_asset_id = asset_id
-                )
+                ) # type: ignore
             for i , chunk in enumerate(file_chunks)
         ]
 
