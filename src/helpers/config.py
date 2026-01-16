@@ -26,6 +26,14 @@ class Settings(BaseSettings):
     GENERATION_DAFAULT_MAX_TOKENS: Optional[int] = None
     GENERATION_DAFAULT_TEMPERATURE: Optional[float] = None
 
+    VECTOR_DB_BACKEND : Optional[str] = None
+    VECTOR_DB_PATH : Optional[str] = None
+    VECTOR_DB_DISTANCE_METHOD : Optional[str] = None
+
+    ORGINAL_LANGUGE :str = "en"
+    DEFAULT_LANGUGE :str = "en"
+
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8"

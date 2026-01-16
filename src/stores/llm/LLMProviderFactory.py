@@ -19,7 +19,7 @@ class LLMProviderFactory:
                 default_temperature=self.config.GENERATION_DAFAULT_TEMPERATURE
             )
 
-        if provider == LLMEnum.COHERE:
+        if provider == LLMEnum.COHERE.value:
             return CoHereProvider(
                 api_key=self.config.COHERE_API_KEY,
                 default_input_max_chars=self.config.INPUT_DAFAULT_MAX_CHARACTERS,

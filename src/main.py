@@ -1,32 +1,63 @@
 from fastapi import FastAPI
-from routes import base, data
+from routes import base, data, nlp
 from motor.motor_asyncio import AsyncIOMotorClient
 from helpers.config import get_settings
 from stores.llm.LLMProviderFactory import LLMProviderFactory
+from stores.vectoredb.VectorDBProviderFactory import VectorDBProviderFactory
+from stores.llm.tamplates.template_parser import TemplateParser
 
 app = FastAPI()
 
-async def startup_db_client():
+
+@app.on_event("startup")
+async def startup_span():
     settings = get_settings()
-    app.mongo_conn = AsyncIOMotorClient(settings.MONGODB_URL)
-    app.db_client = app.mongo_conn[settings.MONGODB_DATABASE]
+    # ===== MongoDB =====
+    app.mongo_conn = AsyncIOMotorClient(settings.MONGODB_URL)  # type: ignore
+    app.db_client = app.mongo_conn[settings.MONGODB_DATABASE]  # type: ignore
 
+    # ===== Factories =====
     llm_provider_factory = LLMProviderFactory(settings)
+    vectordb_provider_factory = VectorDBProviderFactory(config=settings)
 
-    # generation client
-    app.generation_client = llm_provider_factory.create(provider=settings.GENERATION_BACKEND)
-    app.generation_client.set_generation_model(model_id = settings.GENERATION_MODEL_ID)
+    # ===== Generation Client =====
+    app.generation_client = llm_provider_factory.create(provider=settings.GENERATION_BACKEND)  # type: ignore
 
-    # embedding client
-    app.embedding_client = llm_provider_factory.create(provider=settings.EMBEDDING_BACKEND)
-    app.embedding_client.set_embedding_model(model_id=settings.EMBEDDING_MODEL_ID,
-                                             embedding_size=settings.EMBEDDING_MODEL_SIZE)
+    if app.generation_client is None: # type: ignore
+        raise RuntimeError("Generation client was not created")
 
-async def shutdown_db_client():
-    app.mongo_conn.close()
+    app.generation_client.set_generation_model(model_id=settings.GENERATION_MODEL_ID)  # type: ignore
 
-app.router.lifespan.on_startup.append(startup_db_client)
-app.router.lifespan.on_shutdown.append(shutdown_db_client)
+    # ===== Embedding Client =====
+    app.embedding_client = llm_provider_factory.create(provider=settings.EMBEDDING_BACKEND)  # type: ignore
 
+    if app.embedding_client is None: # type: ignore
+        raise RuntimeError("Embedding client was not created")
+
+    app.embedding_client.set_embedding_model(model_id=settings.EMBEDDING_MODEL_ID, emmbeding_size=settings.EMBEDDING_MODEL_SIZE,)  # type: ignore
+
+    # ===== Vector DB =====
+    app.vectordb_client = vectordb_provider_factory.create(provider=settings.VECTOR_DB_BACKEND)  # type: ignore
+
+    if app.vectordb_client is None: # type: ignore
+        raise RuntimeError("VectorDB client was not created")
+
+    app.vectordb_client.connect()  # type: ignore
+
+    # ====== Template Parser =====
+    app.template_parser = TemplateParser(languge=settings.ORGINAL_LANGUGE,default_languge=settings.DEFAULT_LANGUGE) # type: ignore
+
+
+@app.on_event("shutdown")
+async def shutdown_span():
+    if hasattr(app, "mongo_conn"):
+        app.mongo_conn.close()  # type: ignore
+
+    if hasattr(app, "vectordb_client"):
+        app.vectordb_client.disconnect()  # type: ignore
+
+
+# ===== Routers =====
 app.include_router(base.base_router)
 app.include_router(data.data_router)
+app.include_router(nlp.nlp_router)

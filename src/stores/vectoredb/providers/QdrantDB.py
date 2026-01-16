@@ -4,6 +4,7 @@ from qdrant_client import models ,QdrantClient
 from ..VectorDBInterface import VectorDBInterface
 from ..VectorDBEnum import VectorDBEnum,DistanceMethodEnum
 import logging
+from models.db__schemes.DataChunk import RetrievedDocument
 
 class QdrantDB(VectorDBInterface):
     def __init__(self,db_path : str ,distance_method  : str):
@@ -90,12 +91,22 @@ class QdrantDB(VectorDBInterface):
                 try:
                     _ = self.client.upload_records(collection_name=collection_name,records=batch_records)
                 except Exception as e:
-                    self.logger.error("error while inserting batch {e}")
+                    self.logger.error(f"error while inserting batch {e}")
                     return False
             return True
         return False
     
     def serch_by_vector(self, collection_name: str, vector: list, limit: int=5):
         if self.client:
-            return self.client.search(collection_name=collection_name,query_vector=vector,limit=limit)
+            results = self.client.search(collection_name=collection_name,query_vector=vector,limit=limit)
+            if not results or len(results) == 0:
+                return None
+            return [ RetrievedDocument(**{
+                
+                "score": result.score,
+                "text":result.payload["text"], # type: ignore
+
+            })
+            for result in results
+            ]
         

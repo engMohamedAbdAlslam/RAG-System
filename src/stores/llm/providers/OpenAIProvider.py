@@ -12,7 +12,7 @@ class OpenAIProvider(LLMInterface):
         
         self.api_key = api_key
         self.api_url = api_url
-
+        self.enums = OpenAIEnum
         self.default_input_max_chars = default_input_max_chars
         self.default_output_max_tokens = default_output_max_tokens
         self.default_temperature = default_temperature

@@ -13,5 +13,14 @@ class ResponseSignal(Enum):
     # process
     PROCESSING_FAILD = "processing_filed"
     PROCESSING_SUCCESS = "processing_success"
+
+    # vector
+    PROJECT_NOT_FOUND = "project not found"
+    INSERT_INTO_VECTOR_DB_ERROR = "insert_into_vector_db_error"
     
-    
+    INSERT_INTO_VECTOR_DB_SUCCESS = "insert_into_vector_db_success"
+    VECTOR_SEARCH_ERROR = "vector_search_error"
+    VECTOR_SEARCH_SUCCESS = "vector_search_success"
+
+    ANSWER_RESPONSE_SUCCESS = "answer_response_success"
+    ANSWER_RESPONSE_ERROR = "amswer_response_error"

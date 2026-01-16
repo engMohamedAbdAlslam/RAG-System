@@ -10,7 +10,7 @@ class CoHereProvider(LLMInterface):
                         default_temperature :float =0.1):
         
         self.api_key = api_key
-
+        self.enums = CoHereEnum
         self.default_input_max_chars = default_input_max_chars
         self.default_output_max_tokens = default_output_max_tokens
         self.default_temperature = default_temperature
@@ -49,7 +49,7 @@ class CoHereProvider(LLMInterface):
         response = self.client.chat(
             model = self.generation_model_id,
             chat_history = chat_history,
-            messages = self.process_text(prompt= prompt), # type: ignore
+            message = self.process_text(text= prompt), # type: ignore
             max_tokens= max_output_tokens,
             temperature = temperature
         )
@@ -78,13 +78,17 @@ class CoHereProvider(LLMInterface):
                                      input_type=input_type,
                                      embedding_types=["float"])
         
-        if not response or not response.embeddings or not response.embeddings.float: # pyright: ignore[reportAttributeAccessIssue]
+        if  (
+                response is None
+                or response.embeddings is None
+                or response.embeddings.float is None # type: ignore
+                or len(response.embeddings.float) == 0 # type: ignore
+            ):
+            raise ValueError("Empty embedding response from Cohere")
 
-            self.logger.error("error while emmbeding text with CoHere")
-            return None
+
         return response.embeddings.float[0] # type: ignore
 
-        return response.data[0].emmbeding
 
     def process_text(self, text:str):
         return text[:self.default_input_max_chars].strip()

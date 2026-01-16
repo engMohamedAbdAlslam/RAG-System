@@ -1,4 +1,7 @@
 {
     "python.languageServer": "Pylance",
-    "postman.settings.dotenv-detection-notification-visibility": false
+    "postman.settings.dotenv-detection-notification-visibility": false,
+    "python.analysis.extraPaths": [
+        "./src"
+    ]
 }
