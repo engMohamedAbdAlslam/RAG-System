@@ -21,5 +21,6 @@ document_prompt  = Template("\n".join([
 
 footer_prompt = Template("\n".join(
     ["Based on the above documents , please generate an answer for the user.",
+     "## query :$query",
      "## Answer:"]
 ))
