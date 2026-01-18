@@ -41,4 +41,5 @@ $ Remote-WSL: Reopen Folder in WSL
 $ cd docker
 $ cp .env.example .env
 ```
+
 - update `env` with your credentials
