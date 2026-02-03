@@ -5,9 +5,9 @@ import logging
 from models.db__schemes.minirag.schemes import RetrievedDocument
 
 class QdrantDB(VectorDBInterface):
-    def __init__(self,db_path : str ,distance_method  : str):
+    def __init__(self,db_client : str , default_vector_size : int , distance_method : str,index_threshold : int = 100):
         self.client = None
-        self.db_path = db_path
+        self.db_client = db_client
         if distance_method == DistanceMethodEnum.COSINE:
             self.distance_method = models.Distance.COSINE
         elif distance_method == DistanceMethodEnum.DOT:
@@ -16,40 +16,41 @@ class QdrantDB(VectorDBInterface):
             raise ValueError(f"Unsupported distance method: {distance_method}")
 
 
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger("uvicorn")
 
-    def connect(self):
-        self.client = QdrantClient(path=self.db_path)
+    async def connect(self):
+        self.client = QdrantClient(path=self.db_client)
     
-    def disconnect(self):
+    async def disconnect(self):
         self.client=None
-    def is_collection_existed(self, collection_name: str) -> bool:
+    async def is_collection_existed(self, collection_name: str) -> bool:
         if self.client:
             return self.client.collection_exists(collection_name=collection_name)
         return False
     
-    def list_all_collections(self):
+    async def list_all_collections(self):
         if self.client:
             return self.client.get_collections()
         return []
-    def get_collection_info(self, collection_name: str) :
+    async def get_collection_info(self, collection_name: str) :
         if self.client:
             return self.client.get_collection(collection_name=collection_name)
         return {}
-    def delete_collection(self, collection_name: str) :
+    async def delete_collection(self, collection_name: str) :
         if self.is_collection_existed(collection_name=collection_name) and self.client:
             self.client.delete_collection(collection_name=collection_name)
         return None
-    def create_collection(self, collection_name: str, embedding_size: int, do_reset: bool = False) :
+    async def create_collection(self, collection_name: str, embedding_size: int, do_reset: bool = False) :
         if self.client:
             if do_reset:
                 _ = self.delete_collection(collection_name=collection_name)
             if not self.is_collection_existed(collection_name=collection_name):
+                self.logger.info(f"Creating new qdrant collection {collection_name}")
                 _ = self.client.create_collection(collection_name=collection_name , vectors_config=models.VectorParams(size=embedding_size,distance=self.distance_method))
             return True
         return False
     
-    def insert_one(self, collection_name: str, text: str, vector: list, metadata: models.Dict = None, record_id: str= None) : # type: ignore
+    async def insert_one(self, collection_name: str, text: str, vector: list, metadata: models.Dict = None, record_id: str= None) : # type: ignore
         if self.client:
             if not self.is_collection_existed(collection_name=collection_name):
                 self.logger.error("collection is not found so you can not insert")
@@ -67,7 +68,7 @@ class QdrantDB(VectorDBInterface):
             return True
         return False
     
-    def insert_many(self, collection_name: str, texts: list, vectors: list, metadata: list = None, record_ids: list  = None, batch_size: int = 50) : # type: ignore
+    async def insert_many(self, collection_name: str, texts: list, vectors: list, metadata: list = None, record_ids: list  = None, batch_size: int = 50) : # type: ignore
         if self.client:
             if metadata is None:
                 metadata = [None]*len(texts)
@@ -94,7 +95,7 @@ class QdrantDB(VectorDBInterface):
             return True
         return False
     
-    def serch_by_vector(self, collection_name: str, vector: list, limit: int=5):
+    async def serch_by_vector(self, collection_name: str, vector: list, limit: int=5):
         if self.client:
             results = self.client.search(collection_name=collection_name,query_vector=vector,limit=limit)
             if not results or len(results) == 0:

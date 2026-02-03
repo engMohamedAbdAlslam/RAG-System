@@ -1,5 +1,9 @@
+from tabnanny import check
+from venv import create
+
+from numpy import record
 from ..VectorDBInterface import VectorDBInterface
-from ..VectorDBEnum import PgVectorTableSchemeEnum, VectorDBEnum,DistanceMethodEnum
+from ..VectorDBEnum import PgVectorIndexTypeEnum, PgVectorTableSchemeEnum, VectorDBEnum,DistanceMethodEnum
 import logging
 from typing import Dict, List, Optional
 from models.db__schemes import RetrievedDocument
@@ -7,13 +11,18 @@ from sqlalchemy.sql import text as sql_text
 import json
 
 class PgVectorProvider(VectorDBInterface):
-    def __init__(self , db_client , default_vector_size : int , distance_method : str ):
+    def __init__(self , db_client , default_vector_size : int , distance_method : str,index_threshold : int = 100 ):
         self.db_client = db_client
+        self.index_threshold = index_threshold
         self.default_vector_size = default_vector_size
         self.distance_method = distance_method
         self.pg_vector_table_prefix = PgVectorTableSchemeEnum._PREFIX.value
 
         self.logger = logging.getLogger("uvicorn")
+
+        self.default_index_name = lambda collection_name : f"{collection_name}_vector_idx"
+
+
 
     async def connect(self) -> None:
         async with self.db_client as session:
@@ -97,6 +106,57 @@ class PgVectorProvider(VectorDBInterface):
             return True
         
         return False
+    async def is_index_existed(self,collection_name:str ):
+        index_name = self.default_index_name(collection_name=collection_name)
+        async with self.db_client as session:
+            async with session.begin():
+                check_sql = sql_text("""
+                                    SELECT 1
+                                     FROM pg_indexes
+                                     WHERE tablename = :collection_name
+                                     AND index_name = :index_name        
+                                     """)
+                results = await session.execute(check_sql,{
+                    "collection_name":collection_name,
+                    "index_name":index_name
+                })
+                return bool(results.scalar_on_or_none())
+            
+    async def create_vector_index(self, collection_name:str ,index_type :str= PgVectorIndexTypeEnum.HNSW.value):
+        is_index_existed = self.is_index_existed(collection_name=collection_name)
+        if is_index_existed:
+            return False
+        async with self.db_client as session:
+            async with session.begin():
+                count_sql = sql_text(f"SELECT COUNT(*) FROM {collection_name}")
+                result = await session.execute(count_sql)
+                records_count = result.scalar_one()
+                
+                if records_count<self.index_threshold:
+                    return False
+                self.logger.info(f"START: creating vector index for collection {collection_name}")
+
+                index_name = self.default_index_name(collection_name=collection_name)
+                create_index_sql = sql_text(f'CREATE INDEX {index_name} ON {collection_name} USING {index_type} ({PgVectorTableSchemeEnum.VECTOR.value} {self.distance_method})')
+                await session.execute(create_index_sql)
+                self.logger.info(f"END: creating vector index for collection {collection_name}")
+                return True
+        
+    async def reset_index(self,collection_name : str , index_type :str = PgVectorIndexTypeEnum.HNSW.value):
+        index_name = self.default_index_name(collection_name=collection_name)
+        is_index_existed = self.is_index_existed(collection_name=collection_name)
+        if not is_index_existed:
+            self.logger.info(f"not found any index to reset it from collection : {collection_name}")
+            return True
+        async with self.db_client as session:
+            async with session.begin():
+                drop_sql = sql_text(f"DROP INDEX IS IF EXISTS {index_name}")
+                results = await session.execute(drop_sql)
+
+        create_idx = self.create_vector_index(collection_name=collection_name ,index_type=index_type )
+        return create_idx
+
+
     async def insert_one(self,collection_name: str,
                         text: str,
                         vector: list,

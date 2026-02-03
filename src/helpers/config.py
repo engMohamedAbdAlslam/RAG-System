@@ -34,10 +34,11 @@ class Settings(BaseSettings):
     GENERATION_DAFAULT_TEMPERATURE: Optional[float] = None
 
 
-    VECTOR_DB_BACKEND_LITERAL : List[str] = None
+    VECTOR_DB_BACKEND_LITERAL : List[str] 
     VECTOR_DB_BACKEND : Optional[str] = None
     VECTOR_DB_PATH : Optional[str] = None
     VECTOR_DB_DISTANCE_METHOD : Optional[str] = None
+    VECTOR_DB_INDEX_THRESHOLD : int = 100
 
     ORGINAL_LANGUGE :str = "en"
     DEFAULT_LANGUGE :str = "en"
