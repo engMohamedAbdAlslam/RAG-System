@@ -1,10 +1,8 @@
-from http import client
-from httpx import delete
 from qdrant_client import models ,QdrantClient
 from ..VectorDBInterface import VectorDBInterface
 from ..VectorDBEnum import VectorDBEnum,DistanceMethodEnum
 import logging
-from models.db__schemes.DataChunk import RetrievedDocument
+from models.db__schemes.minirag.schemes import RetrievedDocument
 
 class QdrantDB(VectorDBInterface):
     def __init__(self,db_path : str ,distance_method  : str):

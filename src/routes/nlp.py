@@ -16,7 +16,7 @@ nlp_router = APIRouter(
 )
 
 @nlp_router.post("/index/push/{project_id}")
-async def index_project(request : Request,project_id : str , push_requset : PushRequest):
+async def index_project(request : Request,project_id : int , push_requset : PushRequest):
 
     project_model =await ProjectModel.create_instance(db_client=request.app.db_client)
     project =await project_model.get_project_or_create_one(project_id=project_id)
@@ -39,8 +39,8 @@ async def index_project(request : Request,project_id : str , push_requset : Push
     page_number = 1
     inserted_items_count = 0 
     while has_record:
-        page_chunks = await data_chunk_model.get_project_chunks(
-            project_id=project.id, # type: ignore
+        page_chunks ,_  = await data_chunk_model.get_project_chunks(
+            project_id=project.project_id, # type: ignore
             page=page_number
         )
 
@@ -70,7 +70,7 @@ async def index_project(request : Request,project_id : str , push_requset : Push
                  "no_chunks":inserted_items_count}
     )
 @nlp_router.get("/collection/{project_id}")
-async def get_collection_info(request : Request,project_id : str):
+async def get_collection_info(request : Request,project_id : int):
 
     project_model =await ProjectModel.create_instance(db_client=request.app.db_client)
     project =await project_model.get_project_or_create_one(project_id=project_id)
@@ -89,7 +89,7 @@ async def get_collection_info(request : Request,project_id : str):
     )
 
 @nlp_router.get("/list/collection/{project_id}")
-async def get_list_collection_info(request : Request,project_id : str):
+async def get_list_collection_info(request : Request,project_id : int):
 
     project_model =await ProjectModel.create_instance(db_client=request.app.db_client)
     project =await project_model.get_project_or_create_one(project_id=project_id)
@@ -106,7 +106,7 @@ async def get_list_collection_info(request : Request,project_id : str):
                  "list_collection_size":(list_collection_info)}
     )
 @nlp_router.post("/index/search/{project_id}")
-async def index_search(request : Request,project_id : str , search_requset : SerachRequest):
+async def index_search(request : Request,project_id : int , search_requset : SerachRequest):
 
     project_model =await ProjectModel.create_instance(db_client=request.app.db_client)
     project =await project_model.get_project_or_create_one(project_id=project_id)
@@ -130,7 +130,7 @@ async def index_search(request : Request,project_id : str , search_requset : Ser
     )
 
 @nlp_router.post("/index/answer/{project_id}")
-async def answer_rag(request : Request,project_id : str , search_requset : SerachRequest):
+async def answer_rag(request : Request,project_id : int , search_requset : SerachRequest):
     project_model =await ProjectModel.create_instance(db_client=request.app.db_client)
     project =await project_model.get_project_or_create_one(project_id=project_id)
 

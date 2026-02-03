@@ -1,10 +1,13 @@
 from fastapi import FastAPI
+from sqlalchemy import URL
 from routes import base, data, nlp
-from motor.motor_asyncio import AsyncIOMotorClient
+# from motor.motor_asyncio import AsyncIOMotorClient # type: ignore
 from helpers.config import get_settings
 from stores.llm.LLMProviderFactory import LLMProviderFactory
 from stores.vectoredb.VectorDBProviderFactory import VectorDBProviderFactory
 from stores.llm.tamplates.template_parser import TemplateParser
+from sqlalchemy.ext.asyncio import create_async_engine,AsyncSession
+from sqlalchemy.orm import sessionmaker
 
 app = FastAPI()
 
@@ -13,8 +16,34 @@ app = FastAPI()
 async def startup_span():
     settings = get_settings()
     # ===== MongoDB =====
-    app.mongo_conn = AsyncIOMotorClient(settings.MONGODB_URL)  # type: ignore
-    app.db_client = app.mongo_conn[settings.MONGODB_DATABASE]  # type: ignore
+    # app.mongo_conn = AsyncIOMotorClient(settings.MONGODB_URL)  # type: ignore
+    # app.db_client = app.mongo_conn[settings.MONGODB_DATABASE]  # type: ignore
+
+    
+    # ===== Postgres =====
+
+    database_url = URL.create(
+        drivername="postgresql+asyncpg",
+        username=settings.POSTGRES_USERNAME,
+        password=settings.POSTGRES_PASSWORD,  
+        host=settings.POSTGRES_HOST,
+        port=settings.POSTGRES_PORT,
+        database=settings.POSTGRES_MAIN_DATABASE,
+    )
+    app.db_engine = create_async_engine( # type: ignore
+        database_url,
+        echo=True,  # غيّر إلى False في الإنتاج
+        pool_pre_ping=True,
+        pool_size=10,
+        max_overflow=20
+    )  
+
+    app.db_client = sessionmaker( # type: ignore
+        bind=app.db_engine,   # type: ignore
+        class_=AsyncSession,
+        expire_on_commit=False
+    )
+
 
     # ===== Factories =====
     llm_provider_factory = LLMProviderFactory(settings)
@@ -50,9 +79,9 @@ async def startup_span():
 
 @app.on_event("shutdown")
 async def shutdown_span():
-    if hasattr(app, "mongo_conn"):
-        app.mongo_conn.close()  # type: ignore
-
+    # if hasattr(app, "mongo_conn"):
+    #     app.mongo_conn.close()  # type: ignore
+    app.db_engine.dispose() # type: ignore
     if hasattr(app, "vectordb_client"):
         app.vectordb_client.disconnect()  # type: ignore
 

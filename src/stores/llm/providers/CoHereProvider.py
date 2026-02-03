@@ -74,7 +74,7 @@ class CoHereProvider(LLMInterface):
             input_type = CoHereEnum.QUERY.value
 
         response = self.client.embed(model=self.emmbeding_model_id,
-                                     texts=[self.process_text(text)],
+                                     texts=[text],
                                      input_type=input_type,
                                      embedding_types=["float"])
         
@@ -92,9 +92,13 @@ class CoHereProvider(LLMInterface):
 
     def process_text(self, text:str):
         return text[:self.default_input_max_chars].strip()
+    
+   
+
+    
 
     def construct_prompt(self, prompt : str , role :str):
         return {
             "role":role,
-            "text":self.process_text(text=prompt)
+            "text":prompt
         }

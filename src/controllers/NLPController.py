@@ -20,11 +20,11 @@ class NLPController(BaseController):
         self.generation_client = generation_client
         self.template_parser = template_parser
 
-    def create_collection_name(self,project_id :str):
+    def create_collection_name(self,project_id :int):
         return f"collection_{project_id}".strip()
     
     def reset_vectordb_collection(self,project :Project ):
-        collection_name = self.create_collection_name(project_id=project.project_id)
+        collection_name = self.create_collection_name(project_id=project.project_id) # type: ignore
         return self.vectordb_client.delete_collection(collection_name = collection_name)
     
     def search_by_vector(self,text : str ,project :Project, limit:int=5 ):
@@ -34,7 +34,7 @@ class NLPController(BaseController):
         if len(embbeding_text) == 0:
             return False
         # get collection name
-        collection_name = self.create_collection_name(project_id=project.project_id)
+        collection_name = self.create_collection_name(project_id=project.project_id) # type: ignore
         # search by vector
         result  = self.vectordb_client.serch_by_vector(collection_name=collection_name,limit=limit,vector=embbeding_text)
         if not result:
@@ -59,7 +59,7 @@ class NLPController(BaseController):
 
     def index_into_vector_db(self , project :Project , chunks : List[DataChunk],do_reset :bool =False,):
         ## step 1 get collection name
-        collection_name = self.create_collection_name(project_id=project.project_id)
+        collection_name = self.create_collection_name(project_id=project.project_id) # type: ignore
         print("CREATE COLLECTION:", collection_name)
 
 
@@ -70,11 +70,11 @@ class NLPController(BaseController):
         ]
         metadata=[
 
-           chunk.chunk_matadata for chunk in chunks
+           chunk.chunk_metadata for chunk in chunks
         ]
         record_ids = []
         for chunk in chunks:
-            mongo_id = str(chunk.id)
+            mongo_id = str(chunk.chunk_id)
             generated_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, mongo_id))
             record_ids.append(generated_id)
 
@@ -106,7 +106,7 @@ class NLPController(BaseController):
                 key="document_prompt",
                 vars={
                     "doc_num": idx + 1,
-                    "chunk_text": doc.text
+                    "chunk_text": self.generation_client.process_text(doc.text)
                 }
             ) or ""
             for idx, doc in enumerate(retrived_doc)

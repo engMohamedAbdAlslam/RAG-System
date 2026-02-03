@@ -9,9 +9,16 @@ class Settings(BaseSettings):
     FILE_MAX_SIZE: int
     FILE_CHUNK_SIZE: int
 
-    MONGODB_URL: str
-    MONGODB_DATABASE: str
+    # MONGODB_URL: str
+    # MONGODB_DATABASE: str
 
+    POSTGRES_USERNAME:str
+    POSTGRES_PASSWORD:str
+    POSTGRES_HOST:str
+    POSTGRES_PORT:int
+    POSTGRES_MAIN_DATABASE:str
+    
+    
     GENERATION_BACKEND: str
     EMBEDDING_BACKEND: str
 
@@ -26,6 +33,8 @@ class Settings(BaseSettings):
     GENERATION_DAFAULT_MAX_TOKENS: Optional[int] = None
     GENERATION_DAFAULT_TEMPERATURE: Optional[float] = None
 
+
+    VECTOR_DB_BACKEND_LITERAL : List[str] = None
     VECTOR_DB_BACKEND : Optional[str] = None
     VECTOR_DB_PATH : Optional[str] = None
     VECTOR_DB_DISTANCE_METHOD : Optional[str] = None
