@@ -15,7 +15,8 @@ class QdrantDB(VectorDBInterface):
         else:
             raise ValueError(f"Unsupported distance method: {distance_method}")
 
-
+        self.default_vector_size = default_vector_size
+        self.index_threshold = index_threshold
         self.logger = logging.getLogger("uvicorn")
 
     async def connect(self):

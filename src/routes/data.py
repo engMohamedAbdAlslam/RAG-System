@@ -12,8 +12,8 @@ from models.ProjectModel import ProjectModel
 from models.DataChunkModel import DataChunkModel
 from models.AssetModel import AssetModel
 from models.db__schemes import DataChunk,Asset
-from bson.objectid import ObjectId
 from models.enums.AssetEnum import AssetEnum
+from controllers import NLPController
 
 data_router = APIRouter(
     prefix="/api/v1/data",
@@ -86,6 +86,11 @@ async def process_end_point(request:Request,project_id : int , process_request :
 
     asset_model =await AssetModel.create_instance(
             db_client=request.app.db_client)
+    
+    nlp_controller = NLPController(embedding_client=request.app.vectordb_client,
+                                   generation_client=request.app.generation_client,
+                                   template_parser=request.app.template_parser,
+                                   vector_db_client=request.app.vectordb_client)
     project_file_ids = {}
     
     if process_request.file_id:
@@ -117,6 +122,8 @@ async def process_end_point(request:Request,project_id : int , process_request :
     process_controller = ProcessController(project_id=project_id)
 
     if do_reset == 1:
+        collection_name = nlp_controller.create_collection_name(project_id=project_id)
+        _ = await request.app.vectordb_client.delete_collection(collection_name)
         _ = await chunk_model.delete_chunks_by_project_id(
         project_id=project.project_id # type: ignore
         )

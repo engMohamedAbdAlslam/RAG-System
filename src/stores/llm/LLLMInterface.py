@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any,Union
 
 
 class LLMInterface(ABC):
@@ -25,7 +25,7 @@ class LLMInterface(ABC):
     @abstractmethod
     def emmbed_text(
         self,
-        text: str,
+        text: Union[str,List],
         document_type: Optional[Any] = None
     ) -> Optional[List[float]]:
         pass

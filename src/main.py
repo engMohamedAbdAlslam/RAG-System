@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 from sqlalchemy import URL
 from routes import base, data, nlp
-# from motor.motor_asyncio import AsyncIOMotorClient # type: ignore
 from helpers.config import get_settings
 from stores.llm.LLMProviderFactory import LLMProviderFactory
 from stores.vectoredb.VectorDBProviderFactory import VectorDBProviderFactory
@@ -47,7 +46,7 @@ async def startup_span():
 
     # ===== Factories =====
     llm_provider_factory = LLMProviderFactory(settings)
-    vectordb_provider_factory = VectorDBProviderFactory(config=settings)
+    vectordb_provider_factory = VectorDBProviderFactory(config=settings,db_client=app.db_client) # type: ignore
 
     # ===== Generation Client =====
     app.generation_client = llm_provider_factory.create(provider=settings.GENERATION_BACKEND)  # type: ignore
@@ -71,7 +70,7 @@ async def startup_span():
     if app.vectordb_client is None: # type: ignore
         raise RuntimeError("VectorDB client was not created")
 
-    app.vectordb_client.connect()  # type: ignore
+    await app.vectordb_client.connect()  # type: ignore
 
     # ====== Template Parser =====
     app.template_parser = TemplateParser(languge=settings.ORGINAL_LANGUGE,default_languge=settings.DEFAULT_LANGUGE) # type: ignore
@@ -83,7 +82,7 @@ async def shutdown_span():
     #     app.mongo_conn.close()  # type: ignore
     app.db_engine.dispose() # type: ignore
     if hasattr(app, "vectordb_client"):
-        app.vectordb_client.disconnect()  # type: ignore
+        await app.vectordb_client.disconnect()  # type: ignore
 
 
 # ===== Routers =====

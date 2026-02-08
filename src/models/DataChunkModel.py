@@ -1,3 +1,4 @@
+from bson import ObjectId
 from .BaseDataModel import BaseDataModel
 from .db__schemes import DataChunk
 from sqlalchemy import delete, func, select
@@ -21,23 +22,21 @@ class DataChunkModel(BaseDataModel):
             await session.refresh(chunk)
         return chunk
 
-    async def get_chunk(self, chunk_id: str):
+    async def get_chunk(self, chunk_id: int): # غيرت النوع لـ int لأنه Primary Key في تعريفك
         async with self.db_client() as session: # type: ignore
-            async with session.begin():
-                stmt = select(DataChunk).where(DataChunk.id == chunk_id)
-                result = await session.execute(stmt)
-                return result.scalar_one_or_none()
+            # تم تصحيح اسم العمود إلى chunk_id
+            stmt = select(DataChunk).where(DataChunk.chunk_id == chunk_id)
+            result = await session.execute(stmt)
+            return result.scalar_one_or_none()
 
     async def insert_many_chunks(self, chunks: list, batch_size: int = 100):
-        """إدخال دفعات من الـ chunks مع تحسين الأداء"""
         async with self.db_client() as session: # type: ignore
             async with session.begin():
                 for i in range(0, len(chunks), batch_size):
                     batch = chunks[i:i + batch_size]
                     session.add_all(batch)
-                    # flush دوري لتجنب استهلاك الذاكرة مع الحفاظ على الأداء
-                    if (i // batch_size) % 10 == 0:  # flush كل 10 دفعات
-                        await session.flush()
+                    # الـ flush هنا كافٍ، والـ commit سيحدث تلقائياً في نهاية الـ with
+                    await session.flush() 
         return len(chunks)
 
     async def delete_chunks_by_project_id(self, project_id: str):  # تم الحفاظ على الاسم الأصلي مع التنويه
@@ -68,3 +67,10 @@ class DataChunkModel(BaseDataModel):
                 chunks = result.scalars().all()
                 
                 return chunks, total_pages
+            
+    async def get_total_chunk_count(self, project_id: int):
+        async with self.db_client() as session: # type: ignore
+            # تصحيح الـ count بتحديد العمود
+            count_sql = select(func.count(DataChunk.chunk_id)).where(DataChunk.chunk_project_id == project_id)
+            count_result = await session.execute(count_sql)
+            return count_result.scalar() or 0

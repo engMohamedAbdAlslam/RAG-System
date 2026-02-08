@@ -1,7 +1,9 @@
+from ast import List
 from ..LLLMInterface import LLMInterface 
 import cohere
 import logging
 from ..LLMEnum import CoHereEnum,DocumentTypeEnum 
+from typing import Union, List
 
 class CoHereProvider(LLMInterface):
     def __init__(self , api_key : str , 
@@ -60,7 +62,7 @@ class CoHereProvider(LLMInterface):
         return response.text
 
 
-    def emmbed_text(self , text : str , document_type = None):
+    def emmbed_text(self , text : Union[str,List] , document_type = None):
         if not self.client:
             self.logger.error("CoHere client was not set")
             return None
@@ -68,13 +70,15 @@ class CoHereProvider(LLMInterface):
         if not self.emmbeding_model_id:
             self.logger.error("emmbeding model for Cohere was not found")
             return None
+        if isinstance(text,str):
+            text = [text]
 
         input_type = CoHereEnum.DOCUMENT.value
         if document_type==DocumentTypeEnum.QUERY:
             input_type = CoHereEnum.QUERY.value
 
         response = self.client.embed(model=self.emmbeding_model_id,
-                                     texts=[text],
+                                     texts=[t for t in text],
                                      input_type=input_type,
                                      embedding_types=["float"])
         
@@ -86,8 +90,7 @@ class CoHereProvider(LLMInterface):
             ):
             raise ValueError("Empty embedding response from Cohere")
 
-
-        return response.embeddings.float[0] # type: ignore
+        return [f for f in response.embeddings.float] # type: ignore
 
 
     def process_text(self, text:str):
