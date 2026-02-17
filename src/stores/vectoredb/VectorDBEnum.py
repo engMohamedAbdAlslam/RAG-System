@@ -15,7 +15,7 @@ class PgVectorTableSchemeEnum(Enum):
     VECTOR = "vector"
     CHUNK_ID = "chunk_id"
     METADATA = "matedata"
-    _PREFIX = "pgvector"
+    _PREFIX = "collection_"
 
 
 class PgVectorDistanceMethodEnum(Enum):

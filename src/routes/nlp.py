@@ -89,7 +89,7 @@ async def get_collection_info(request : Request,project_id : int):
     nlp_controller = NLPController(
                     embedding_client=request.app.embedding_client,
                     generation_client = request.app.generation_client,
-                    vector_db_client= request.app.vector_db_client,
+                    vector_db_client= request.app.vectordb_client,
                     template_parser = request.app.template_parser) 
     collection_info =await nlp_controller.get_vector_collection_info(project=project) # type: ignore
     return JSONResponse(
@@ -107,7 +107,7 @@ async def get_list_collection_info(request : Request,project_id : int):
     nlp_controller = NLPController(
                     embedding_client=request.app.embedding_client,
                     generation_client = request.app.generation_client,
-                    vector_db_client= request.app.vector_db_client,
+                    vector_db_client= request.app.vectordb_client,
                     template_parser = request.app.template_parser) 
     list_collection_info =await nlp_controller.get_list_vector_info() 
     return JSONResponse(
@@ -126,7 +126,7 @@ async def index_search(request : Request,project_id : int , search_requset : Ser
     nlp_controller = NLPController(
                     embedding_client=request.app.embedding_client,
                     generation_client = request.app.generation_client,
-                    vector_db_client= request.app.vector_db_client,
+                    vector_db_client= request.app.vectordb_client,
                     template_parser = request.app.template_parser) 
     results =await nlp_controller.search_by_vector(project=project,text=search_requset.text,limit=search_requset.limit) # type: ignore
     if not results:
@@ -149,7 +149,7 @@ async def answer_rag(request : Request,project_id : int , search_requset : Serac
     nlp_controller = NLPController(
                     embedding_client=request.app.embedding_client,
                     generation_client = request.app.generation_client,
-                    vector_db_client= request.app.vector_db_client,
+                    vector_db_client= request.app.vectordb_client,
                     template_parser = request.app.template_parser) 
     
     answer,full_prompt , chat_history =await nlp_controller.answer_rag_question(project=project,query=search_requset.text,limit=search_requset.limit) # type: ignore

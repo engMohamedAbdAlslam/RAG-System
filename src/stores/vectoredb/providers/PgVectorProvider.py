@@ -46,25 +46,41 @@ class PgVectorProvider(VectorDBInterface):
         records = []
         async with self.db_client() as session:
             async with session.begin():
-                list_table  = sql_text('SELECT tablename FROM pg_tabels WHERE tablename LIKE :prefix')
-                results =await session.execute(list_table,{"prfix":self.pg_vector_table_prefix})
+                list_table  = sql_text('SELECT tablename FROM pg_tables WHERE tablename LIKE :prefix')
+                results =await session.execute(list_table,{"prefix":self.pg_vector_table_prefix})
                 records = results.scalars().all()
         return records
     
-    async def get_collection_info(self, collection_name: str) :
+    async def get_collection_info(self, collection_name: str):
         async with self.db_client() as session:
             async with session.begin():
-                table_info_sql  = sql_text(f'SELECT * FROM pg_tabels WHERE tablename = {collection_name}')
+                table_info_sql = sql_text(f'SELECT * FROM pg_tables WHERE tablename = {collection_name}')
                 count_sql = sql_text(f'SELECT COUNT(*) FROM {collection_name}')
-                table_info = session.execute(table_info_sql)
-                count = session.execute(count_sql)
+                
+                # تنفيذ الاستعلامات
+                table_info = await session.execute(table_info_sql, {"collection_name": collection_name})
+                count_result = await session.execute(count_sql)
+                
+                # استخراج البيانات
                 data_info = table_info.fetchone()
+                count = count_result.scalar()
+                
+                # إذا كانت البيانات غير موجودة
                 if data_info is None:
                     return None
+                
+                # تحويل البيانات إلى قاموس
+                # استخراج أسماء الأعمدة أولاً
+                column_names = [col[0] for col in table_info.keys()]  # الحصول على أسماء الأعمدة من `table_info`
+                
+                # تحويل `data_info` إلى قاموس باستخدام الأسماء
+                data_dict = dict(zip(column_names, data_info))
+                
                 return {
-                    "table":dict(data_info),
-                    "count":count
-                }
+                    "table": data_dict,
+                    "count": count
+            }
+
     
     async def delete_collection(self, collection_name: str) -> None:
     # تأكد من أن الاسم آمن (اختياري لكن موصى به)
@@ -182,8 +198,6 @@ class PgVectorProvider(VectorDBInterface):
                 await session.commit()
         return True
 
-
-
     async def insert_many(
             self,
             collection_name: str,
@@ -275,30 +289,37 @@ class PgVectorProvider(VectorDBInterface):
                 self.logger.exception(f"Failed insertion in '{collection_name}': {str(e)}")
                 return False
                 
-    async def serch_by_vector(self , collection_name : str , vector:list , limit: int):
+    async def serch_by_vector(self, collection_name: str, vector: list, limit: int):
 
         is_collection_existed = await self.is_collection_existed(collection_name=collection_name)
         if not is_collection_existed:
-            self.logger.error(f"can not serch for records to non-existed collection {collection_name}")
+            self.logger.error(f"can not search for records in non-existent collection {collection_name}")
             return False
-        vector_str = "["+ ",".join([ str(v) for v in vector])+ "]" 
+
+        vector_str = "[" + ",".join([str(v) for v in vector]) + "]"
+        
         async with self.db_client() as session:
             async with session.begin():
-                search_sql = sql_text(f'SELECT {PgVectorTableSchemeEnum.TEXT.value} as text,1-({PgVectorTableSchemeEnum.VECTOR.value}<=>:vector) as score'
-                                      f'FROM {collection_name}'
-                                      'ORDER BY score DESC'
-                                      f'LIMIT {limit}'
-                                            ) 
-                results = await session.execute(search_sql , {
-                    "vector": vector_str
+                search_sql = sql_text(f'''
+                    SELECT {PgVectorTableSchemeEnum.TEXT.value} AS text,
+                        1 - ({PgVectorTableSchemeEnum.VECTOR.value} <=> :vector) AS score
+                    FROM {collection_name}
+                    ORDER BY score DESC
+                    LIMIT :limit
+                ''')
+
+                results = await session.execute(search_sql, {
+                    "vector": vector_str,
+                    "limit": limit
                 })
+
                 records = results.fetchall()
 
-                return [ RetrievedDocument(**{
-                
-                "score": record.score,
-                "text":record.payload["text"], 
+                return [
+                    RetrievedDocument(**{
+                        "score": record.score,
+                        "text": record.text
+                    })
+                    for record in records
+                ]
 
-            })
-            for record in records
-            ]

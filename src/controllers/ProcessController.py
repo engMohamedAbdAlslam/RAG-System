@@ -66,7 +66,6 @@ class ProcessController(BaseController):
             length_function=len
         )
 
-        # 1️⃣ تنظيف النص قبل الـ chunking
         cleaned_texts = [
             self.normalize_text(rec.page_content)
             for rec in file_content
@@ -77,13 +76,11 @@ class ProcessController(BaseController):
             for rec in file_content
         ]
 
-        # 2️⃣ chunking بعد التنظيف
         chunks = text_splitter.create_documents(
             cleaned_texts,
             metadatas=metadatas
         )
 
-        # 3️⃣ إضافة file_id
         for chunk in chunks:
             chunk.metadata["file_id"] = file_id
 
