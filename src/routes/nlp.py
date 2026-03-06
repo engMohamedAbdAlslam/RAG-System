@@ -2,6 +2,7 @@ from fastapi import FastAPI,APIRouter,Depends,status,Request
 from fastapi.responses import JSONResponse
 import logging
 
+from models.ChatRepositoryModel import ChatRepositoryModel
 from routes.schemes.nlp import PushRequest, SerachRequest 
 from models.ProjectModel import ProjectModel
 from models.DataChunkModel import DataChunkModel
@@ -31,6 +32,7 @@ async def index_project(request : Request,project_id : int , push_requset : Push
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,content={"signal":ResponseSignal.PROJECT_NOT_FOUND.value })
 
     nlp_controller = NLPController(
+                    db_session = request.app.db_session_factory,
                     embedding_client=request.app.embedding_client,
                     generation_client = request.app.generation_client,
                     vector_db_client= request.app.vectordb_client,
@@ -86,7 +88,7 @@ async def get_collection_info(request : Request,project_id : int):
     if not project:
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,content={"signal":ResponseSignal.PROJECT_NOT_FOUND.value })
 
-    nlp_controller = NLPController(
+    nlp_controller = NLPController(db_session = request.app.db_session_factory,
                     embedding_client=request.app.embedding_client,
                     generation_client = request.app.generation_client,
                     vector_db_client= request.app.vectordb_client,
@@ -104,7 +106,7 @@ async def get_list_collection_info(request : Request,project_id : int):
     project =await project_model.get_project_or_create_one(project_id=project_id)
     if not project:
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,content={"signal":ResponseSignal.PROJECT_NOT_FOUND.value })
-    nlp_controller = NLPController(
+    nlp_controller = NLPController(db_session = request.app.db_session_factory,
                     embedding_client=request.app.embedding_client,
                     generation_client = request.app.generation_client,
                     vector_db_client= request.app.vectordb_client,
@@ -123,7 +125,7 @@ async def index_search(request : Request,project_id : int , search_requset : Ser
     if not project:
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,content={"signal":ResponseSignal.PROJECT_NOT_FOUND.value })
 
-    nlp_controller = NLPController(
+    nlp_controller = NLPController(db_session = request.app.db_session_factory,
                     embedding_client=request.app.embedding_client,
                     generation_client = request.app.generation_client,
                     vector_db_client= request.app.vectordb_client,
@@ -139,20 +141,27 @@ async def index_search(request : Request,project_id : int , search_requset : Ser
     )
 
 @nlp_router.post("/index/answer/{project_id}")
-async def answer_rag(request : Request,project_id : int , search_requset : SerachRequest):
+async def answer_rag(request : Request,project_id : int , search_request : SerachRequest):
     project_model =await ProjectModel.create_instance(db_client=request.app.db_client)
     project =await project_model.get_project_or_create_one(project_id=project_id)
 
     if not project:
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,content={"signal":ResponseSignal.PROJECT_NOT_FOUND.value })
 
-    nlp_controller = NLPController(
+    nlp_controller = NLPController(db_session = request.app.db_session_factory,
                     embedding_client=request.app.embedding_client,
                     generation_client = request.app.generation_client,
                     vector_db_client= request.app.vectordb_client,
                     template_parser = request.app.template_parser) 
+    session = await nlp_controller.chat_repo.get_or_create_session(
+    session_uuid=search_request.session_uuid, 
+    project_id=project_id
+)
     
-    answer,full_prompt , chat_history =await nlp_controller.answer_rag_question(project=project,query=search_requset.text,limit=search_requset.limit) # type: ignore
+    answer, full_prompt, chat_history,session_uuid= await nlp_controller.answer_rag_question_rewrite_query(
+        project=project,
+        query=search_request.text,
+        session_uuid=session.session_uuid,limit=search_request.limit) # type: ignore
     if not answer:
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -162,7 +171,8 @@ async def answer_rag(request : Request,project_id : int , search_requset : Serac
             "signal":ResponseSignal.ANSWER_RESPONSE_SUCCESS.value,
             "answer":answer,
             "full_prompt": full_prompt,
-            "chat_history":chat_history
+            "chat_history":chat_history,
+            "session_uuid":session_uuid
 
         }
     )

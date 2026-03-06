@@ -1,5 +1,5 @@
-from re import S
-from pydantic import BaseModel
+import uuid
+from pydantic import BaseModel,Field
 from typing import Optional
 
 class PushRequest(BaseModel):
@@ -9,3 +9,4 @@ class PushRequest(BaseModel):
 class SerachRequest(BaseModel):
     text :str
     limit : Optional[int] = 5
+    session_uuid: Optional[uuid.UUID] = Field(default_factory=uuid.uuid4)

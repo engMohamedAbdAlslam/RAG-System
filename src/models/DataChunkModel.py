@@ -1,8 +1,6 @@
-from bson import ObjectId
 from .BaseDataModel import BaseDataModel
 from .db__schemes import DataChunk
 from sqlalchemy import delete, func, select
-from sqlalchemy.exc import NoResultFound
 
 class DataChunkModel(BaseDataModel):
     def __init__(self, db_client: object):
@@ -22,9 +20,9 @@ class DataChunkModel(BaseDataModel):
             await session.refresh(chunk)
         return chunk
 
-    async def get_chunk(self, chunk_id: int): # غيرت النوع لـ int لأنه Primary Key في تعريفك
+    async def get_chunk(self, chunk_id: int): 
         async with self.db_client() as session: # type: ignore
-            # تم تصحيح اسم العمود إلى chunk_id
+            
             stmt = select(DataChunk).where(DataChunk.chunk_id == chunk_id)
             result = await session.execute(stmt)
             return result.scalar_one_or_none()
@@ -35,11 +33,10 @@ class DataChunkModel(BaseDataModel):
                 for i in range(0, len(chunks), batch_size):
                     batch = chunks[i:i + batch_size]
                     session.add_all(batch)
-                    # الـ flush هنا كافٍ، والـ commit سيحدث تلقائياً في نهاية الـ with
                     await session.flush() 
         return len(chunks)
 
-    async def delete_chunks_by_project_id(self, project_id: str):  # تم الحفاظ على الاسم الأصلي مع التنويه
+    async def delete_chunks_by_project_id(self, project_id: str): 
         async with self.db_client() as session: # type: ignore
             async with session.begin():
                 stmt = delete(DataChunk).where(DataChunk.chunk_project_id == project_id)

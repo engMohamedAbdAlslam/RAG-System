@@ -7,9 +7,11 @@ from stores.vectoredb.VectorDBProviderFactory import VectorDBProviderFactory
 from stores.llm.tamplates.template_parser import TemplateParser
 from sqlalchemy.ext.asyncio import create_async_engine,AsyncSession
 from sqlalchemy.orm import sessionmaker
+from utils.metrics import setup_metrics
 
 app = FastAPI()
 
+setup_metrics(app = app)
 
 @app.on_event("startup")
 async def startup_span():
@@ -31,7 +33,7 @@ async def startup_span():
     )
     app.db_engine = create_async_engine( # type: ignore
         database_url,
-        echo=True,  # غيّر إلى False في الإنتاج
+        echo=False,  # غيّر إلى False في الإنتاج
         pool_pre_ping=True,
         pool_size=10,
         max_overflow=20
@@ -40,10 +42,11 @@ async def startup_span():
     app.db_client = sessionmaker( # type: ignore
         bind=app.db_engine,   # type: ignore
         class_=AsyncSession,
-        expire_on_commit=False
+        expire_on_commit=False,
+        
     )
-
-
+    app.db_session_factory = app.db_client # type: ignore
+    
     # ===== Factories =====
     llm_provider_factory = LLMProviderFactory(settings)
     vectordb_provider_factory = VectorDBProviderFactory(config=settings,db_client=app.db_client) # type: ignore
@@ -74,7 +77,7 @@ async def startup_span():
 
     # ====== Template Parser =====
     app.template_parser = TemplateParser(languge=settings.ORGINAL_LANGUGE,default_languge=settings.DEFAULT_LANGUGE) # type: ignore
-
+    
 
 @app.on_event("shutdown")
 async def shutdown_span():

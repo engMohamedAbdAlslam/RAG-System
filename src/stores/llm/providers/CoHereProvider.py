@@ -1,4 +1,5 @@
 from ast import List
+
 from ..LLLMInterface import LLMInterface 
 import cohere
 import logging
@@ -34,6 +35,23 @@ class CoHereProvider(LLMInterface):
         self.emmbeding_model_id =model_id
         self.emmbeding_size = emmbeding_size
 
+    def format_history(self, db_messages: list, system_prompt: str) -> list:
+        formatted = []
+        
+        # Cohere يتقبل الـ SYSTEM كدور داخل الـ chat_history
+        if system_prompt:
+            formatted.append({
+                "role": self.enums.SYSTEM.value, # "SYSTEM"
+                "message": system_prompt
+            })
+            
+        for msg in db_messages:
+            role = self.enums.USER.value if msg.role == "user" else self.enums.ASSISTANT.value
+            formatted.append({
+                "role": role,
+                "message": msg.message_text
+            })
+        return formatted
     def generate_text(self,prompt : str, chat_history : list = [] , max_output_tokens:int= None , temperature:float = None): # type: ignore
        
         if not self.client:

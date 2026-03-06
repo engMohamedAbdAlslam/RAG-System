@@ -22,8 +22,7 @@ class PgVectorProvider(VectorDBInterface):
 
 
     async def connect(self) -> None:
-        async with self.db_client.begin() as conn:  # self.db_client يجب أن يكون AsyncEngine
-            # تصحيح خطأ إملائي: "EXISTS" وليس "EXIST"
+        async with self.db_client.begin() as conn: 
             await conn.execute(sql_text("CREATE EXTENSION IF NOT EXISTS vector"))
 
     async def disconnect(self) -> None:
@@ -32,10 +31,8 @@ class PgVectorProvider(VectorDBInterface):
 
     async def is_collection_existed(self, collection_name: str):
         record = None
-        # الإصلاح هنا: نقوم باستدعاء db_client() لإنشاء كائن session جديد
         async with self.db_client() as session: 
             async with session.begin():
-                # تصحيح إملائي بسيط: اسم الجدول في PostgreSQL هو pg_tables وليس pg_tabels
                 query = sql_text("SELECT tablename FROM pg_tables WHERE tablename = :collection_name")
                 results = await session.execute(query, {"collection_name": collection_name})
                 record = results.scalar_one_or_none()
@@ -57,20 +54,20 @@ class PgVectorProvider(VectorDBInterface):
                 table_info_sql = sql_text(f'SELECT * FROM pg_tables WHERE tablename = {collection_name}')
                 count_sql = sql_text(f'SELECT COUNT(*) FROM {collection_name}')
                 
-                # تنفيذ الاستعلامات
+
                 table_info = await session.execute(table_info_sql, {"collection_name": collection_name})
                 count_result = await session.execute(count_sql)
                 
-                # استخراج البيانات
+
                 data_info = table_info.fetchone()
                 count = count_result.scalar()
                 
-                # إذا كانت البيانات غير موجودة
+
                 if data_info is None:
                     return None
                 
-                # تحويل البيانات إلى قاموس
-                # استخراج أسماء الأعمدة أولاً
+                
+
                 column_names = [col[0] for col in table_info.keys()]  # الحصول على أسماء الأعمدة من `table_info`
                 
                 # تحويل `data_info` إلى قاموس باستخدام الأسماء
@@ -83,11 +80,11 @@ class PgVectorProvider(VectorDBInterface):
 
     
     async def delete_collection(self, collection_name: str) -> None:
-    # تأكد من أن الاسم آمن (اختياري لكن موصى به)
+
         if not collection_name.replace("_", "").isalnum():
             raise ValueError(f"Invalid collection name: {collection_name}")
         
-        # تشفير اسم الجدول بأمان لقاعدة بيانات PostgreSQL
+
         safe_table_name = quoted_name(collection_name, quote=True)
         
         async with self.db_client.begin() as conn:  # ملاحظة: المتغير هنا اتصال (connection) وليس جلسة ORM
@@ -106,7 +103,7 @@ class PgVectorProvider(VectorDBInterface):
             self.logger.info(f"creating collection {collection_name}")
             async with self.db_client() as session:
                 async with session.begin():
-                    # بناء الاستعلام مع التأكد من وجود الفواصل والمسافات
+
                     create_sql = sql_text(f"""
                         CREATE TABLE {collection_name} (
                             {PgVectorTableSchemeEnum.ID.value} bigserial PRIMARY KEY,

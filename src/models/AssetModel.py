@@ -22,10 +22,7 @@ class AssetModel(BaseDataModel):
         return asset
 
     async def get_all_project_assets(self, asset_project_id: str, asset_type: str):
-        """
-        استرجاع جميع الأصول لمشروع معين ونوع محدد
-        ملاحظة: تم إزالة تحويل ObjectId نظرًا لتوحيد أنواع المعرفات كـ strings في النموذج الجديد
-        """
+        
         async with self.db_client() as session: # type: ignore
             async with session.begin():
                 stmt = (

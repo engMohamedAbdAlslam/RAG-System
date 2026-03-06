@@ -1,8 +1,3 @@
-from functools import total_ordering
-import re
-from turtle import reset
-
-from openai import project
 from .BaseDataModel import BaseDataModel
 from .db__schemes import Project
 from .enums.DataBaseEnum import DataBaseEnum
@@ -30,9 +25,7 @@ class ProjectModel(BaseDataModel):
             await session.commit()
             await session.refresh(project)
         return project
-        # result = await self.collection.insert_one(project.dict(by_alias = True,exclude_unset=True))
-        # project.id = result.inserted_id
-        # return project
+
     
     async def get_project_or_create_one(self,project_id:int):
 
@@ -50,14 +43,7 @@ class ProjectModel(BaseDataModel):
                     return project
                 else:
                     return project
-        # record = await self.collection.find_one({"project_id":project_id})
-        # if record is None:
-        #     ## creat new project
-        #     project = Project(project_id=project_id) # type: ignore
-        #     project = await self.creat_project(project=project)
-        #     return project
-        
-        # return Project(**record)
+
     
     async def get_all_project(self, page:int=1,page_size:int =10):
         async with self.db_client() as session: # type: ignore
@@ -70,19 +56,3 @@ class ProjectModel(BaseDataModel):
                 query = select(Project).offset((page-1)*page_size).limit(page_size)
                 projects =await session.execute( query).scalars().all()
                 return projects,total_pages
-
-        # count total number of all documents
-        # total_documents = self.collection.count_documents({})
-
-        # total_pages = total_documents//page_size
-        # if total_documents % page_size>0:
-        #     total_pages +=1
-
-        # cursor=await self.collection.find().skip((page-1)*(page_size)).limit(page_size)
-        # projects= []
-        # for document in cursor:
-        #     projects.append(
-        #         Project(**document)
-        #     )
-
-        # return projects,total_pages

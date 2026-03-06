@@ -38,6 +38,23 @@ class OpenAIProvider(LLMInterface):
         self.emmbeding_model_id =model_id
         self.emmbeding_size = emmbeding_size
 
+    def format_history(self, db_messages: list, system_prompt: str) -> list:
+        formatted = []
+        
+        # OpenAI يحتاج الـ System كأول عنصر في مصفوفة الرسائل
+        if system_prompt:
+            formatted.append({
+                "role": self.enums.SYSTEM.value, # "system"
+                "content": system_prompt
+            })
+            
+        for msg in db_messages:
+            role = self.enums.USER.value if msg.role == "user" else self.enums.ASSISTANT.value
+            formatted.append({
+                "role": role,
+                "content": msg.message_text
+            })
+        return formatted
     def generate_text(self, prompt : str, chat_history : list = [] , max_output_tokens: Optional[int] = None,
         temperature: Optional[float] = None,):
         if not self.client:

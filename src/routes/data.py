@@ -90,7 +90,8 @@ async def process_end_point(request:Request,project_id : int , process_request :
     nlp_controller = NLPController(embedding_client=request.app.vectordb_client,
                                    generation_client=request.app.generation_client,
                                    template_parser=request.app.template_parser,
-                                   vector_db_client=request.app.vectordb_client)
+                                   vector_db_client=request.app.vectordb_client,
+                                   db_session=request.app.db_session_factory)
     project_file_ids = {}
     
     if process_request.file_id:

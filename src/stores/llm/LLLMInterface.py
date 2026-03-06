@@ -33,3 +33,6 @@ class LLMInterface(ABC):
     @abstractmethod
     def construct_prompt(self, prompt: str, role: str) -> Dict[str, str]:
         pass
+    @abstractmethod
+    def format_history(self, db_messages: list, system_prompt:str) -> list: # type: ignore
+        pass
